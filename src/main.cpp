@@ -1,7 +1,5 @@
-#include <Arduino.h>
 #include "CircleTools.cpp"
 #include <Servo.h>
-#include <math.h>
 
 // put function declarations here:
 void printPointsOnCircle(Circle c, float degStep);
@@ -10,6 +8,8 @@ void setLaserPosition(float, float);
 float cAngle(float);
 float aAngle(float);
 char getSerialChar();
+void calibrate();
+float arctan(float);
 
 Servo cAxisServo;
 Servo aAxisServo;
@@ -19,12 +19,19 @@ const int A_AXIS_CENTER = 1200;
 // Entfernung von der Wand in mm
 const int DISTANCE = 740;
 
+const int C_CALIBRATION_DISTANCE = 100;
+
 const float C_AXIS_TRANSLATION = 2.33f;
 const float A_AXIS_TRANSLATION = 1.86f;
 const int COMPENSATION = 721;
 
+float cWinkeldifferenz;
+float aWinkeldifferenz;
+
 void setup() {
   Serial.begin(9600);
+
+
 
   setLaserState(false);
   // Laser
@@ -37,14 +44,39 @@ void setup() {
 
   setLaserState(true);
   Serial.println("Ready");
-
+  calibrate();
+ 
 }
 
 void loop() {
+
+}
+
+float arctan(float x) {
+  return(x-(1.0/3)*pow(x,3)+(1.0/5)*pow(x,5));
+}
+
+void calibrate() {
   getSerialChar();
-  setLaserPosition(0,50);
-  getSerialChar();
-  setLaserPosition(0,0);
+  setLaserPosition(C_CALIBRATION_DISTANCE,0);
+  Serial.println("Tatsächliche Distanz (mm):");
+  int actualDistance = 0;
+  while(true) {
+    char c = getSerialChar();
+    byte b = byte(c);
+    if((b>=48)&&(b<=57)) {
+      int ziffer = b - 48;
+      actualDistance = 10*actualDistance+ziffer;
+    } else if(c=='\n') {
+      break;
+    }
+  }
+  Serial.println(String(actualDistance));
+  float optimalerWinkel = (float)atan((float)C_CALIBRATION_DISTANCE/DISTANCE);
+  float tatsaechlicherWinkel = (float)atan((float)actualDistance/DISTANCE);
+  Serial.println(String(optimalerWinkel)+", "+String(tatsaechlicherWinkel));
+  cWinkeldifferenz = optimalerWinkel - tatsaechlicherWinkel;
+  Serial.println("Winkeldifferenz="+String(cWinkeldifferenz,5));
 }
 
 char getSerialChar() {
