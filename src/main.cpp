@@ -40,22 +40,33 @@ void setup() {
   // attach servos
   cAxisServo.attach(6);
   aAxisServo.attach(5);
+
+  cAxisServo.writeMicroseconds(C_AXIS_CENTER);
+  aAxisServo.writeMicroseconds(A_AXIS_CENTER);
   setLaserPosition(0,0);
 
   setLaserState(true);
   Serial.println("Ready");
-  calibrate();
+
+
+
+
+  //calibrate();
  
 }
 
 void loop() {
-
+  getSerialChar();
+  Circle c = Circle(80);
+  for(int i = 0 ; i <= 360 ; i+=8) {
+    Point p = c.getPointOnCircle(i);
+    setLaserPosition(p.x, p.y);
+    delay(20);
+  }
 }
 
-float arctan(float x) {
-  return(x-(1.0/3)*pow(x,3)+(1.0/5)*pow(x,5));
-}
 
+// Das ist immer noch komplett kaputt
 void calibrate() {
   getSerialChar();
   setLaserPosition(C_CALIBRATION_DISTANCE,0);
